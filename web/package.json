@@ -1,0 +1,1 @@
+{"name":"creative-portal","private":true,"type":"module","scripts":{"dev":"next dev -p 3210","build":"next build","start":"next start -p 3210"},"dependencies":{"next":"^15.5.29","react":"^19.3.1","react-dom":"^19.3.1"}}

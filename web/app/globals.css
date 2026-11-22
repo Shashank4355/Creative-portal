@@ -1,0 +1,24 @@
+:root { --bg:#f7f7f5; --card:#fff; --ink:#1d1d1b; --mute:#6b6b66; --line:#e4e3de; --ok:#1f7a4d; --okbg:#e6f4ec; --bad:#b3261e; --badbg:#fbe9e7; --warn:#8a5a00; --warnbg:#fdf3dc; --acc:#2f5bd3; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display:flex; gap:20px; align-items:center; padding:12px 24px; background:var(--card); border-bottom:1px solid var(--line); flex-wrap:wrap; }
+header b { font-size:15px; }
+nav a { color:var(--mute); text-decoration:none; margin-right:14px; } nav a:hover { color:var(--ink); }
+.as { margin-left:auto; color:var(--mute); font-size:13px; }
+.as select { font:inherit; padding:3px 6px; }
+main { padding:20px 24px 48px; max-width:1240px; }
+h1 { font-size:20px; margin:4px 0 14px; } h2 { font-size:15px; margin:26px 0 8px; }
+.banner { padding:10px 14px; border-radius:6px; margin-bottom:16px; }
+.banner.ok { background:var(--okbg); color:var(--ok); } .banner.bad { background:var(--badbg); color:var(--bad); } .banner.warn { background:var(--warnbg); color:var(--warn); }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.kpi { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:10px 12px; }
+.kpi span { color:var(--mute); font-size:12px; display:block; } .kpi b { font-size:19px; font-variant-numeric:tabular-nums; }
+.kpi small { color:var(--mute); }
+table { border-collapse:collapse; width:100%; background:var(--card); border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+th, td { padding:6px 10px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+th { background:#fafaf8; color:var(--mute); font-weight:500; font-size:12px; }
+th:first-child, td:first-child, td.l, th.l { text-align:left; }
+.tag { display:inline-block; padding:1px 7px; border-radius:10px; font-size:12px; }
+.pass { background:var(--okbg); color:var(--ok); } .fail { background:var(--badbg); color:var(--bad); } .warn { background:var(--warnbg); color:var(--warn); } .info { background:#eef2fb; color:var(--acc); }
+.note { color:var(--mute); font-size:12.5px; max-width:900px; }
+.scroll { overflow-x:auto; }
