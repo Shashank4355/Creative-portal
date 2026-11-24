@@ -124,6 +124,16 @@ async function main() {
       `Meta claims $${x.account.purchase_value} (7d click + 1d view). Shopify net sales $${r2(s.net_sales)}, UTM-tagged from Meta $${r2(s.meta_utm_net_sales)}`);
     if (x.ok) { await db.query('insert into published_dates(date, run_id) values ($1,$2)', [x.date, run]); published++; }
   }
+  // keep what a quick pull would have reported next to the checked numbers, for the Data checks page
+  const sumOf = (rows, k) => r2(rows.reduce((s, r) => s + r[k], 0));
+  for (const [method, rows, recs, note] of [
+    ['quick', naive.adRows, naiveRec, 'purchase + omni_purchase + fb_pixel_purchase summed; archived and deleted ads not requested'],
+    ['checked', adRows, rec, 'one purchase type counted; archived and deleted ads included; every day reconciled to the account total'],
+  ]) {
+    await db.query('insert into sync_compare values ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [run, method, sumOf(rows, 'spend'), sumOf(rows, 'purchases'), sumOf(rows, 'purchase_value'), recs.filter((x) => x.ok).length, recs.length, note]);
+  }
+
   await db.query(`update sync_runs set finished_at=now(), status=$2, meta_calls=$3, meta_throttles=$4, shopify_calls=$5, shopify_429=$6 where id=$1`,
     [run, published === rec.length ? 'ok' : 'partial', stats.metaCalls, stats.metaThrottles, stats.shopifyCalls, stats.shopify429]);
 

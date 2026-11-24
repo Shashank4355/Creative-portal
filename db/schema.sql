@@ -69,6 +69,15 @@ create table data_checks (
   detail text
 );
 
+-- What a quick pull reports vs what the checked pull reports, for the same days.
+create table sync_compare (
+  run_id int references sync_runs(id),
+  method text not null check (method in ('quick', 'checked')),
+  spend numeric(12,2), purchases int, purchase_value numeric(12,2),
+  days_matching int, days int, note text,
+  primary key (run_id, method)
+);
+
 -- A day only reaches the leaderboard once its checks pass.
 create table published_dates (date date primary key, run_id int, published_at timestamptz default now());
 
@@ -98,6 +107,12 @@ create or replace function me_person() returns text language sql stable security
   select person from app_users where id = auth.uid()
 $$;
 
+create or replace function check_status() returns table (date date, check_name text, status text)
+language sql stable security definer set search_path = public as $$
+  select d.date, d.check_name, d.status from data_checks d
+  where auth.uid() is not null and d.run_id = (select max(id) from sync_runs)
+$$;
+
 -- reporting view: published days, attributed creatives only ---------------------
 create view creative_perf with (security_invoker = true) as
 select c.ad_id, c.ad_name, c.code, c.concept, c.format, c.hook, c.strategist, c.editor, c.launch_date,
@@ -121,6 +136,7 @@ alter table sync_runs enable row level security;
 alter table published_dates enable row level security;
 alter table launch_requests enable row level security;
 alter table audit_log enable row level security;
+alter table sync_compare enable row level security;
 
 create policy self_read on app_users for select to authenticated using (id = auth.uid() or me_role() = 'manager');
 
@@ -135,7 +151,10 @@ create policy ad_daily_read on ad_daily for select to authenticated using (
 -- account totals and Shopify revenue are manager-only
 create policy account_read on account_daily for select to authenticated using (me_role() = 'manager');
 create policy shopify_read on shopify_daily for select to authenticated using (me_role() = 'manager');
-create policy checks_read on data_checks for select to authenticated using (true);
+-- check rows carry account spend and Shopify revenue in expected/actual/detail, so they are
+-- manager-only; everyone else gets pass/fail per day through check_status(), with no amounts
+create policy checks_read on data_checks for select to authenticated using (me_role() = 'manager');
+create policy compare_read on sync_compare for select to authenticated using (me_role() = 'manager');
 create policy runs_read on sync_runs for select to authenticated using (true);
 create policy published_read on published_dates for select to authenticated using (true);
 
@@ -153,5 +172,6 @@ grant select on all tables in schema public to authenticated;
 grant insert on launch_requests to authenticated;
 grant update (status, reviewed_by) on launch_requests to authenticated;  -- reviewers cannot touch budget or requester
 grant usage on all sequences in schema public to authenticated;
-grant execute on function auth.uid(), me_role(), me_person() to authenticated;
+grant execute on function auth.uid(), me_role(), me_person(), check_status() to authenticated;
+revoke execute on function check_status() from public;
 -- anon gets nothing at all

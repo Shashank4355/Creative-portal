@@ -8,12 +8,34 @@ Shopify Admin API. The brand (Fernlow, sleep and bedding) and all of its data ar
 made up: 30 days, 115 ads, about $283k of Meta spend and about $1.05M of Shopify net sales.
 No real account, token or customer was used.
 
+**Screens** (manager view unless noted; full size in [`docs/screenshots`](docs/screenshots))
+
+| Overview | Data checks |
+|---|---|
+| ![Overview](docs/screenshots/01-overview.png) | ![Data checks](docs/screenshots/02-data-checks.png) |
+| **Access & controls** (each cell queried live as that role) | **Launch queue** (approve/reject through RLS) |
+| ![Access and controls](docs/screenshots/03-access-controls.png) | ![Launch queue](docs/screenshots/04-launch-queue.png) |
+| **Creatives** | **What's working** |
+| ![Creatives](docs/screenshots/05-creatives.png) | ![Insights](docs/screenshots/06-insights.png) |
+| **Hook-swap video variants** | **Strategist view** (Priya sees only her own creatives) |
+| ![Video variants](docs/screenshots/07-video-variants.png) | ![Strategist view](docs/screenshots/08-strategist-view.png) |
+
 ## What it does
 
 **Portal (Next.js, Postgres with Supabase-style RLS).** Pulls Meta insights at ad level and
 account level, joins each ad to the creative tracker sheet by the code in the ad name, and
 shows how each strategist and editor performs: spend, purchase value, ROAS, CPA, hook rate,
-hold rate, winners and hit rate.
+hold rate, winners and hit rate. Pages:
+- **Overview**: stat tiles with 7-day trends, spend vs return by day, verdict mix, leaderboards, biggest winners.
+- **Creatives**: search, filter, sort, CSV export; each creative has a daily chart and funnel.
+- **Insights**: ROAS by concept, format, hook and launch week against the winner line.
+- **Data checks**: quick pull (7.28) vs checked pull (2.37) from stored rows, a pass/fail calendar,
+  tracker-sheet fixes with the spend they affect, Meta vs Shopify with the reasons they differ.
+- **Access & controls**: a matrix queried live as each role, credentials by job, the test list, what's not done.
+- **Launch queue**: request, approve and reject through RLS (self-approval and over-cap budgets are refused
+  by the database), cap meter, audit log.
+- **Video variants**: the hook-swap outputs with their QA, shown only to managers and the people on the file.
+Light and dark themes; works down to phone width.
 
 **Data checks before anyone sees a number.**
 - Ad-level spend, purchases and purchase value must equal Meta's own account total for the
@@ -33,7 +55,8 @@ times, archived ads missing, 0 of 30 days matching the account). The real number
 
 **Access.** Every query runs as the logged-in user under Postgres row-level security.
 A strategist sees only their own creatives, an editor only the ones they cut, managers see
-everything, account totals and Shopify revenue are manager-only, anonymous gets nothing.
+everything, account totals, Shopify revenue and data-check amounts are manager-only (others get
+pass/fail per day through `check_status()`), anonymous gets nothing.
 The read token (`ads_read`) and the write token (`ads_management`) are separate, and only the
 launcher reads the write token. Secrets live in `.env`, which is gitignored.
 
@@ -59,17 +82,17 @@ node scripts/generate.js          # synthetic brand data
 node mock/server.js               # mock Meta / Sheets / Shopify on :4010 (leave running)
 BACKOFF_UNIT_MS=50 node sync/run.js
 node scripts/seed_launches.js     # a launch queue, through the guarded path
-node --test tests/all.test.js     # 19 tests
+node --test tests/all.test.js     # 20 tests
 node db/server.js                 # data API on :4020 (stands in for Supabase's API)
 cd web && npm run dev             # portal on :3210
 node video/hookswap.js            # needs Windows Arial; change FONT elsewhere
 ```
 
-## Tests (19, all passing)
+## Tests (20, all passing)
 
 Data: purchase counted once; ad-level = account total on all 30 days; missing archived ads
 are caught; messy sheet join; Shopify net sales; throttling retried.
-Access: strategist and editor scoping; manager-only revenue; anonymous denied; editors
+Access: strategist and editor scoping; manager-only revenue; check amounts manager-only; anonymous denied; editors
 can't request launches; no tokens in source.
 Money: no self-approval; reviewers can't raise budgets; caps in code and in the database;
 double-submit makes one request; publish creates everything PAUSED, holds back over the

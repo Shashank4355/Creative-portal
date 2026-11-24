@@ -99,6 +99,21 @@ test('access: manager sees everything; others cannot read account revenue', asyn
   assert.equal((await ids(db, 'u-st-priya', 'select * from account_daily')).length, 0);
   assert.equal((await ids(db, 'u-ed-leo', 'select * from shopify_daily')).length, 0);
 });
+test('access: data checks carry revenue, so only managers read amounts; others get pass/fail only', async () => {
+  const db = await seeded();
+  await db.query(`insert into sync_runs(status) values ('ok')`);
+  await db.query(`insert into data_checks values (1,'2026-11-01','meta_vs_shopify','info',60809.58,37700.4,'Shopify net sales $60809.58')`);
+  await db.query(`insert into sync_compare values (1,'quick',100,3,720,0,1,'x'), (1,'checked',150,2,290,1,1,'y')`);
+  assert.equal((await ids(db, 'u-mgr-ana', 'select * from data_checks')).length, 1);
+  assert.equal((await ids(db, 'u-mgr-ana', 'select * from sync_compare')).length, 2);
+  for (const uid of ['u-st-priya', 'u-ed-leo']) {
+    assert.equal((await ids(db, uid, 'select * from data_checks')).length, 0);
+    assert.equal((await ids(db, uid, 'select * from sync_compare')).length, 0);
+    const st = await ids(db, uid, 'select * from check_status()');
+    assert.deepEqual(Object.keys(st[0]).sort(), ['check_name', 'date', 'status']);
+  }
+  await assert.rejects(() => ids(db, null, 'select * from check_status()'), /permission denied/);
+});
 test('access: anonymous gets nothing', async () => {
   const db = await seeded();
   await assert.rejects(() => ids(db, null, 'select * from creatives'), /permission denied/);
